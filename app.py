@@ -1,74 +1,90 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import chromadb
-from sentence_transformers import SentenceTransformer
+from __future__ import annotations
+
 import os
+import re
+from pathlib import Path
 
-app = Flask(__name__)
-CORS(app)
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
-# Initialize Vector DB and Model
-db_path = "./chroma_db"
-client = chromadb.PersistentClient(path=db_path)
-collection = client.get_or_create_collection(name="hygiene_docs")
-model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+from backend.rag import generate_grounded_answer, get_collection, retrieve
 
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    data = request.json
-    query = data.get('query', '')
-    
-    if not query:
-        return jsonify({"error": "No query provided"}), 400
+ROOT = Path(__file__).resolve().parent
+load_dotenv(ROOT.parent / ".env")
 
-    # 1. Embed query
-    query_embedding = model.encode(query).tolist()
+app = FastAPI(title="HygieneGPT API", version="0.1.0")
+origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://127.0.0.1:5173,http://localhost:5173",
+    ).split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
 
-    # 2. Retrieve top 3 matching chunks
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=3
-    )
 
-    retrieved_chunks = results['documents'][0] if results['documents'] else []
-    metadatas = results['metadatas'][0] if results['metadatas'] else []
+class ChatRequest(BaseModel):
+    question: str = Field(min_length=2, max_length=1000)
 
-    # Check relevance threshold
-    if not retrieved_chunks:
-        return jsonify({
-            "answer": "I don't know based on the trusted guidelines provided.",
-            "citations": []
-        })
 
-    # 3. Construct context for LLM / Generation
-    context_str = ""
-    citations = []
-    for i, chunk in enumerate(retrieved_chunks):
-        meta = metadatas[i]
-        context_str += f"[Source {i+1}: {meta['source']}, p. {meta['page']}]\n{chunk}\n\n"
-        citations.append({
-            "id": i + 1,
-            "source": meta['source'],
-            "page": meta['page'],
-            "text": meta['text']
-        })
+@app.get("/api/health")
+def health() -> dict[str, int | str]:
+    try:
+        passage_count = get_collection().count()
+    except Exception:
+        passage_count = 0
+    return {"status": "ok", "indexed_passages": passage_count}
 
-    answer = f"Based on official guidelines, you should follow the recommended protocols carefully. {retrieved_chunks[0][:150]}..."
 
-    return jsonify({
-        "answer": answer,
-        "citations": citations
-    })
+@app.post("/api/chat")
+def chat(request: ChatRequest) -> dict[str, object]:
+    question = request.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Enter a question.")
 
-@app.route('/api/compare', methods=['POST'])
-def compare():
-    data = request.json
-    query = data.get('query', '')
-    
-    return jsonify({
-        "normal_chatbot": "Sure! You can wash your hands with soda or just wipe them on your jeans if you are in a rush. (Hallucinated/Unsafe advice)",
-        "hygiene_gpt": "Hands should be washed with soap and clean running water for at least 20 seconds. [WHO Hand Hygiene Guidelines, p. 14]"
-    })
+    try:
+        passages = retrieve(question)
+    except Exception as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"The knowledge base could not be searched: {error}",
+        ) from error
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    if not passages:
+        return {
+            "answer": "I don't know based on the trusted documents currently available.",
+            "citations": [],
+        }
+
+    try:
+        answer = generate_grounded_answer(question, passages)
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail="The answer service is unavailable. Check the server configuration and try again.",
+        ) from error
+
+    cited_ids = set(re.findall(r"\[(S\d+)\]", answer))
+    retrieved_ids = {passage["citation_id"] for passage in passages}
+    valid_passages = [
+        passage for passage in passages if passage["citation_id"] in cited_ids
+    ]
+    # If the model omits citations or invents an ID, refuse rather than show an unverified answer.
+    if not valid_passages or not cited_ids.issubset(retrieved_ids):
+        return {
+            "answer": "I don't know based on the trusted documents currently available.",
+            "citations": [],
+        }
+
+    return {"answer": answer, "citations": valid_passages}

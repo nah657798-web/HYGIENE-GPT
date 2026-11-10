@@ -1,15 +1,5 @@
-# HygieneGPT 🩺🤖
+# Trusted source PDFs
 
-An exhibition-ready RAG (Retrieval-Augmented Generation) chatbot that answers hygiene questions exclusively from trusted documents (WHO, CDC, Indian Health Ministry guidelines) with exact page citations.
+Place approved, text-searchable PDF guidance documents in this folder, then add their exact filenames and source details to `../sources.json`.
 
-## Features
-- **Strict Grounding:** Answers only using retrieved chunks; refuses off-topic or unknown queries.
-- **Click-to-Verify Citations:** Clicking a citation highlights the exact source passage.
-- **Multilingual Support:** English and Tamil language queries matched against official guidelines.
-- **Voice In/Out:** Powered by the browser's native Web Speech API.
-- **Comparison Mode:** Side-by-side demo showing a normal hallucinating chatbot vs. HygieneGPT.
-
-## Tech Stack
-- **Frontend:** HTML5, Tailwind CSS, JavaScript (Web Speech API)
-- **Backend:** Python, Flask, Flask-CORS
-- **RAG & Vector Search:** ChromaDB, `sentence-transformers`
+This repository intentionally ships without health PDFs. Check each source's date and reuse rights before adding it to a public GitHub repository. Scanned PDFs need OCR before the ingestion script can index their text.

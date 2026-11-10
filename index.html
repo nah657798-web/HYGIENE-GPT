@@ -1,191 +1,98 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HygieneGPT - Exhibition Demo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
-    <!-- Header -->
-    <header class="bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl">🩺</span>
-            <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">HygieneGPT</h1>
-        </div>
-        <div class="flex items-center space-x-3">
-            <button onclick="toggleMode()" id="modeBtn" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-sm font-medium transition">Switch to Comparison Mode</button>
-            <select id="langSelect" class="bg-slate-700 text-sm px-2 py-1.5 rounded-lg border border-slate-600 focus:outline-none">
-                <option value="en">English</option>
-                <option value="ta">தமிழ் (Tamil)</option>
-            </select>
-        </div>
-    </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f7f5" />
+    <meta name="description" content="Ask hygiene questions and check the trusted source passages behind each answer." />
+    <title>HygieneGPT — answers you can verify</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="HygieneGPT home">
+          <span class="brand-mark" aria-hidden="true">H</span>
+          <span>Hygiene<span class="brand-light">GPT</span></span>
+        </a>
+        <div class="trust-label"><span class="status-dot"></span> Answers grounded in trusted documents</div>
+      </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-5xl w-full mx-auto p-4 flex flex-col md:flex-row gap-4">
-        <!-- Chat Area -->
-        <section class="flex-1 flex flex-col bg-slate-800/50 backdrop-blur border border-slate-700/60 rounded-2xl overflow-hidden shadow-xl">
-            <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-4 max-h-[65vh]">
-                <div class="flex items-start space-x-3">
-                    <div class="bg-emerald-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">H</div>
-                    <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl max-w-[80%] text-sm">
-                        Hello! Ask me any hygiene question. I source my answers strictly from WHO, CDC, and Indian Health Ministry guidelines.
-                    </div>
+      <main class="layout">
+        <section class="chat-column" aria-labelledby="page-title">
+          <div class="intro">
+            <p class="eyebrow">CLEAR ANSWERS. CHECKABLE SOURCES.</p>
+            <h1 id="page-title">Good hygiene starts<br />with good information.</h1>
+            <p class="intro-copy">Ask a hygiene question. HygieneGPT searches trusted guidance and shows you the passage behind its answer.</p>
+          </div>
+
+          <section class="chat-card" aria-label="HygieneGPT chat">
+            <div id="conversation" class="conversation" aria-live="polite">
+              <div class="message assistant-message welcome-message">
+                <div class="avatar" aria-hidden="true">H</div>
+                <div class="message-content">
+                  <div class="message-label">HygieneGPT <span class="label-dot"></span></div>
+                  <p>Hi! I can answer from the trusted documents added to this project. Ask me a hygiene question to get started.</p>
+                  <div class="suggestions" aria-label="Example questions">
+                    <button class="suggestion" type="button">When should I wash my hands?</button>
+                    <button class="suggestion" type="button">How do I store drinking water safely?</button>
+                  </div>
                 </div>
+              </div>
             </div>
 
-            <!-- Input Bar -->
-            <div class="p-3 bg-slate-800 border-t border-slate-700 flex items-center space-x-2">
-                <button onclick="toggleVoiceInput()" id="micBtn" class="p-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl transition text-slate-300">🎤</button>
-                <input type="text" id="userInput" placeholder="Ask about hand washing, water safety, sanitization..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-500">
-                <button onclick="sendMessage()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-lg shadow-emerald-500/20">Send</button>
-            </div>
+            <form id="chat-form" class="composer">
+              <label class="sr-only" for="question-input">Ask a hygiene question</label>
+              <textarea id="question-input" rows="1" maxlength="1000" placeholder="Ask a hygiene question…" required></textarea>
+              <div class="composer-actions">
+                <div class="voice-controls">
+                  <label class="sr-only" for="voice-language">Voice language</label>
+                  <select id="voice-language" aria-label="Voice language">
+                    <option value="en-IN">English</option>
+                    <option value="ta-IN">தமிழ்</option>
+                  </select>
+                  <button id="mic-button" class="icon-button" type="button" aria-label="Speak your question" title="Speak your question">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"></path></svg>
+                  </button>
+                </div>
+                <button id="send-button" class="send-button" type="submit" aria-label="Send question">
+                  <span>Ask</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4.5 14-2.7-5.8L5 12Z"></path><path d="m11.8 13.2 3.6-3.6"></path></svg>
+                </button>
+              </div>
+            </form>
+            <p class="fine-print">For learning only. Not a substitute for professional medical advice.</p>
+          </section>
+
+          <div id="connection-status" class="connection-status" role="status">Connecting to the HygieneGPT server…</div>
         </section>
 
-        <!-- Click-to-Verify Citation Drawer -->
-        <aside class="w-full md:w-80 bg-slate-800/50 backdrop-blur border border-slate-700/60 rounded-2xl p-4 flex flex-col shadow-xl">
-            <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Source Inspector</h2>
-            <div id="sourceInspector" class="flex-1 bg-slate-900/60 border border-slate-700/40 rounded-xl p-3 text-xs text-slate-300 overflow-y-auto">
-                <p class="text-slate-500 italic">Click any citation in chat answers to inspect the exact reference passage from WHO/CDC documents here.</p>
+        <aside class="sources-column" aria-labelledby="sources-title">
+          <div class="sources-heading">
+            <div>
+              <p class="eyebrow">SHOW YOUR WORK</p>
+              <h2 id="sources-title">Sources</h2>
             </div>
+            <span class="source-count" id="source-count">0</span>
+          </div>
+          <div id="sources-list" class="sources-list">
+            <div class="empty-sources">
+              <div class="empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6m-6 3.5h6"></path></svg>
+              </div>
+              <h3>Your sources will appear here</h3>
+              <p>When you ask a question, click a citation to see the exact document passage and page.</p>
+            </div>
+          </div>
+          <div class="source-note"><span class="note-icon" aria-hidden="true">i</span><p>Each answer is based only on the documents added to this project. If the sources do not cover it, the chatbot should say so.</p></div>
         </aside>
-    </main>
+      </main>
 
-    <script>
-        let isComparisonMode = false;
-
-        function toggleMode() {
-            isComparisonMode = !isComparisonMode;
-            const btn = document.getElementById('modeBtn');
-            if (isComparisonMode) {
-                btn.textContent = "Switch to Standard Mode";
-                document.getElementById('userInput').value = "Is it okay to use soda or wipe hands on clothes if no water?";
-            } else {
-                btn.textContent = "Switch to Comparison Mode";
-                document.getElementById('userInput').value = "";
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('userInput');
-            const query = input.value.trim();
-            if (!query) return;
-
-            appendMessage(query, 'user');
-            input.value = '';
-
-            const chatBox = document.getElementById('chatBox');
-            const loadingId = 'loading-' + Date.now();
-            chatBox.innerHTML += `<div id="${loadingId}" class="text-xs text-slate-500 italic p-2">Searching guidelines and generating response...</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            if (isComparisonMode) {
-                const res = await fetch('http://localhost:5000/api/compare', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ query })
-                });
-                const data = await res.json();
-                document.getElementById(loadingId).remove();
-                
-                appendComparisonResponse(data.normal_chatbot, data.hygiene_gpt);
-            } else {
-                const res = await fetch('http://localhost:5000/api/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ query })
-                });
-                const data = await res.json();
-                document.getElementById(loadingId).remove();
-
-                appendAssistantResponse(data.answer, data.citations);
-            }
-        }
-
-        function appendMessage(text, sender) {
-            const chatBox = document.getElementById('chatBox');
-            if (sender === 'user') {
-                chatBox.innerHTML += `
-                    <div class="flex justify-end">
-                        <div class="bg-emerald-600 text-white p-3 rounded-2xl max-w-[80%] text-sm shadow">${escapeHtml(text)}</div>
-                    </div>`;
-            }
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function appendAssistantResponse(answer, citations) {
-            const chatBox = document.getElementById('chatBox');
-            let citationHtml = '';
-            
-            citations.forEach(cit => {
-                citationHtml += ` <button onclick='inspectSource(${JSON.stringify(cit)})' class="text-xs bg-cyan-950 text-cyan-300 border border-cyan-800 px-1.5 py-0.5 rounded hover:bg-cyan-900 transition">[${cit.source}, p. ${cit.page}]</button>`;
-            });
-
-            chatBox.innerHTML += `
-                <div class="flex items-start space-x-3">
-                    <div class="bg-emerald-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold text-xs">H</div>
-                    <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl max-w-[85%] text-sm space-y-2">
-                        <p>${escapeHtml(answer)}</p>
-                        <div class="flex flex-wrap gap-1 mt-1">${citationHtml}</div>
-                    </div>
-                </div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-            speakText(answer);
-        }
-
-        function appendComparisonResponse(normal, gpt) {
-            const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML += `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-2">
-                    <div class="bg-rose-950/40 border border-rose-900/60 p-3 rounded-xl text-xs space-y-1">
-                        <span class="font-bold text-rose-400 uppercase">Normal Chatbot (No RAG):</span>
-                        <p class="text-slate-300">${escapeHtml(normal)}</p>
-                    </div>
-                    <div class="bg-emerald-950/40 border border-emerald-900/60 p-3 rounded-xl text-xs space-y-1">
-                        <span class="font-bold text-emerald-400 uppercase">HygieneGPT (With RAG):</span>
-                        <p class="text-slate-300">${escapeHtml(gpt)}</p>
-                    </div>
-                </div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function inspectSource(cit) {
-            const inspector = document.getElementById('sourceInspector');
-            inspector.innerHTML = `
-                <div class="space-y-2">
-                    <span class="font-bold text-cyan-400">${escapeHtml(cit.source)} (Page ${cit.page})</span>
-                    <p class="bg-slate-900 p-2 rounded border border-slate-800 text-slate-300 leading-relaxed">${escapeHtml(cit.text)}</p>
-                </div>`;
-        }
-
-        function toggleVoiceInput() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert("Speech recognition is not supported in this browser.");
-                return;
-            }
-            const recognition = new SpeechRecognition();
-            const lang = document.getElementById('langSelect').value === 'ta' ? 'ta-IN' : 'en-US';
-            recognition.lang = lang;
-            recognition.onresult = (event) => {
-                document.getElementById('userInput').value = event.results[0][0].transcript;
-                sendMessage();
-            };
-            recognition.start();
-        }
-
-        function speakText(text) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = document.getElementById('langSelect').value === 'ta' ? 'ta-IN' : 'en-US';
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-    </script>
-</body>
+      <footer class="footer"><span>HygieneGPT</span><span>Built for learning, backed by sources.</span></footer>
+    </div>
+    <script src="app.js" defer></script>
+  </body>
 </html>
