@@ -8,7 +8,6 @@ from typing import Any
 import chromadb
 from dotenv import load_dotenv
 from openai import OpenAI
-from sentence_transformers import SentenceTransformer
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT.parent / ".env")
@@ -20,13 +19,24 @@ MAX_DISTANCE = float(os.getenv("RETRIEVAL_MAX_DISTANCE", "0.75"))
 
 
 @lru_cache(maxsize=1)
-def get_embedding_model() -> SentenceTransformer:
+def get_embedding_model() -> Any:
+    from sentence_transformers import SentenceTransformer
+
     return SentenceTransformer(MODEL_NAME)
 
 
 @lru_cache(maxsize=1)
 def get_collection() -> Any:
-    client = chromadb.PersistentClient(path=str(ROOT / "data"))
+    configured_path = os.getenv("CHROMA_DATA_DIR")
+    if configured_path:
+        data_path = configured_path
+    elif os.getenv("VERCEL"):
+        # Vercel function bundles are read-only; /tmp is writable but ephemeral.
+        data_path = str(Path("/tmp") / "hygienegpt-chroma")
+    else:
+        data_path = str(ROOT / "data")
+
+    client = chromadb.PersistentClient(path=data_path)
     return client.get_or_create_collection(
         name=COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"},

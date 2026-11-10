@@ -9,7 +9,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from backend.rag import generate_grounded_answer, get_collection, retrieve
+try:
+    from .rag import generate_grounded_answer, get_collection, retrieve
+except ImportError:
+    # Vercel loads this module as `app` from the backend service root.
+    from rag import generate_grounded_answer, get_collection, retrieve
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT.parent / ".env")

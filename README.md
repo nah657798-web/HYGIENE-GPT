@@ -88,6 +88,12 @@ Use Python 3.10 or newer.
 
 The first ingestion downloads the multilingual embedding model and may take a few minutes. Keep the API running while using the chat.
 
+## Deploy on Vercel
+
+The included `vercel.json` routes the frontend and FastAPI backend through one Vercel project. The deployed frontend calls the same-domain `/api` routes; local development continues to call `http://127.0.0.1:8000`.
+
+The Vercel function uses temporary storage for ChromaDB. It starts with an empty knowledge base, and that storage does not persist across function restarts. Add a persistent vector database and index trusted PDFs before using the deployed chatbot for answers. Keep `OPENAI_API_KEY` and `OPENAI_MODEL` in Vercel's backend environment settings; do not put secrets in frontend files.
+
 ## How citations work
 
 Each PDF page is split into overlapping chunks of roughly 280 words. The embedding index stores each chunk with its filename, organization, source URL, and one-based PDF page number. For a question, the backend retrieves the closest chunks and passes only those passages to the language model. The model must cite the supplied IDs (for example, `[S1]`); the UI links those IDs to the returned source passages.

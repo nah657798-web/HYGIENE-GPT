@@ -7,7 +7,10 @@ from typing import Any
 
 from pypdf import PdfReader
 
-from backend.rag import COLLECTION_NAME, ROOT, get_collection, get_embedding_model
+try:
+    from .rag import COLLECTION_NAME, ROOT, get_collection, get_embedding_model
+except ImportError:
+    from rag import COLLECTION_NAME, ROOT, get_collection, get_embedding_model
 
 DOCUMENTS_DIR = ROOT / "documents"
 MANIFEST_PATH = ROOT / "sources.json"

@@ -1,4 +1,5 @@
-const API_BASE = window.HYGIENEGPT_API_URL || "http://127.0.0.1:8000";
+const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_BASE = window.HYGIENEGPT_API_URL || (isLocalHost ? "http://127.0.0.1:8000" : "");
 
 const form = document.querySelector("#chat-form");
 const input = document.querySelector("#question-input");
