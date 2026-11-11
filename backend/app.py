@@ -10,10 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 try:
-    from .rag import generate_grounded_answer, get_collection, retrieve
+    from .rag import available_passage_count, generate_grounded_answer, retrieve
 except ImportError:
-    # Vercel loads this module as `app` from the backend service root.
-    from rag import generate_grounded_answer, get_collection, retrieve
+    # Vercel loads this module as app from the backend service root.
+    from rag import available_passage_count, generate_grounded_answer, retrieve
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT.parent / ".env")
@@ -42,11 +42,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/api/health")
 def health() -> dict[str, int | str]:
-    try:
-        passage_count = get_collection().count()
-    except Exception:
-        passage_count = 0
-    return {"status": "ok", "indexed_passages": passage_count}
+    return {"status": "ok", "indexed_passages": available_passage_count()}
 
 
 @app.post("/api/chat")
@@ -60,19 +56,17 @@ def chat(request: ChatRequest) -> dict[str, object]:
     except Exception as error:
         raise HTTPException(
             status_code=503,
-            detail=f"The knowledge base could not be searched: {error}",
+            detail=f"The trusted PDF library could not be searched: {error}",
         ) from error
 
     if not passages:
         return {
-            "answer": "I don't know based on the trusted documents currently available.",
+            "answer": "I don't know based on the trusted hygiene documents currently available.",
             "citations": [],
         }
 
     try:
         answer = generate_grounded_answer(question, passages)
-    except RuntimeError as error:
-        raise HTTPException(status_code=503, detail=str(error)) from error
     except Exception as error:
         raise HTTPException(
             status_code=502,
@@ -84,10 +78,10 @@ def chat(request: ChatRequest) -> dict[str, object]:
     valid_passages = [
         passage for passage in passages if passage["citation_id"] in cited_ids
     ]
-    # If the model omits citations or invents an ID, refuse rather than show an unverified answer.
+    # If the answer omits citations or invents an ID, refuse rather than show an unverified answer.
     if not valid_passages or not cited_ids.issubset(retrieved_ids):
         return {
-            "answer": "I don't know based on the trusted documents currently available.",
+            "answer": "I don't know based on the trusted hygiene documents currently available.",
             "citations": [],
         }
 

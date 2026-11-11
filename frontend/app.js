@@ -23,8 +23,8 @@ async function checkServer() {
     const health = await response.json();
     setConnectionStatus(
       health.indexed_passages > 0
-        ? `Connected · ${health.indexed_passages} source passages indexed`
-        : "Connected · add trusted PDFs and build the knowledge base to start answering",
+        ? `Connected · ${health.indexed_passages} trusted source passages available`
+        : "Connected · no readable trusted PDF passages were found",
       "online",
     );
   } catch {

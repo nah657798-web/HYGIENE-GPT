@@ -9,3 +9,5 @@ backend/data/*
 !backend/data/.gitkeep
 backend/documents/*.pdf
 !backend/documents/README.md
+!backend/documents/who-community-hand-hygiene-2025.pdf
+!backend/documents/cdc_135342_DS1.pdf

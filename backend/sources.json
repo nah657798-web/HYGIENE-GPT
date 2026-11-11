@@ -1,3 +1,21 @@
 {
-  "documents": []
+  "documents": [
+    {
+      "filename": "who-community-hand-hygiene-2025.pdf",
+      "title": "Guidelines on hand hygiene in community settings",
+      "organization": "World Health Organization and UNICEF",
+      "year": "2025",
+      "url": "https://www.who.int/publications/i/item/9789240116559",
+      "license": "CC BY-NC-SA 3.0 IGO",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/3.0/igo/"
+    },
+    {
+      "filename": "cdc_135342_DS1.pdf",
+      "title": "When and How to Clean Hands",
+      "organization": "Centers for Disease Control and Prevention",
+      "year": "2022",
+      "url": "https://stacks.cdc.gov/view/cdc/135342",
+      "license": "Public Domain (CDC Stacks record)"
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 # Trusted source PDFs
 
-Place approved, text-searchable PDF guidance documents in this folder, then add their exact filenames and source details to `../sources.json`.
+This folder includes two reviewed community hand-hygiene references: the 2025 WHO/UNICEF guideline and the 2022 CDC hand-cleaning factsheet. They are extracted directly at runtime, so Vercel does not need a prebuilt or persistent vector database for the bundled documents.
 
-This repository intentionally ships without health PDFs. Check each source's date and reuse rights before adding it to a public GitHub repository. Scanned PDFs need OCR before the ingestion script can index their text.
+Before adding another PDF, check its date, exact reuse terms, text-searchability and scope. Add its exact filename and source metadata to ../sources.json. Scanned PDFs need OCR before the app can search their text. See ../SOURCES-LICENSES.md for the bundled sources and attribution.
