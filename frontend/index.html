@@ -3,95 +3,173 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f4f7f5" />
-    <meta name="description" content="Ask hygiene questions and check the trusted source passages behind each answer." />
-    <title>HygieneGPT — answers you can verify</title>
+    <meta name="theme-color" content="#f7f8fa" />
+    <meta name="description" content="A hygiene assistant that answers from trusted sources and shows the evidence behind every answer." />
+    <title>HygieneGPT — trusted answers</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <a class="brand" href="#" aria-label="HygieneGPT home">
-          <span class="brand-mark" aria-hidden="true">H</span>
-          <span>Hygiene<span class="brand-light">GPT</span></span>
+    <div class="app-shell" id="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Chat navigation">
+        <a class="brand" href="/" aria-label="HygieneGPT home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3.2 5.2 6v5.3c0 4.3 2.8 7.8 6.8 9.5 4-1.7 6.8-5.2 6.8-9.5V6L12 3.2Z"></path><path d="m9.2 12.2 1.8 1.8 3.9-4"></path></svg>
+          </span>
+          <span class="brand-name">Hygiene<span>GPT</span></span>
         </a>
-        <div class="trust-label"><span class="status-dot"></span> Answers grounded in trusted documents</div>
-      </header>
 
-      <main class="layout">
-        <section class="chat-column" aria-labelledby="page-title">
-          <div class="intro">
-            <p class="eyebrow">CLEAR ANSWERS. CHECKABLE SOURCES.</p>
-            <h1 id="page-title">Good hygiene starts<br />with good information.</h1>
-            <p class="intro-copy">Ask a hygiene question. HygieneGPT searches trusted guidance and shows you the passage behind its answer.</p>
+        <button id="new-chat-button" class="new-chat-button" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          <span>New chat</span>
+          <span class="shortcut">Ctrl K</span>
+        </button>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">RECENT</p>
+          <nav id="history-list" class="history-list" aria-label="Recent chats"></nav>
+          <p id="history-empty" class="history-empty">Your chats in this tab will show here.</p>
+        </div>
+
+        <div class="sidebar-spacer"></div>
+
+        <section class="library-card" aria-label="Trusted reference library">
+          <div class="library-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v18H7.5A2.5 2.5 0 0 1 5 17.5v-13Z"></path><path d="M5 17.5A2.5 2.5 0 0 1 7.5 15H20M9 7h7m-7 3.5h7"></path></svg>
           </div>
-
-          <section class="chat-card" aria-label="HygieneGPT chat">
-            <div id="conversation" class="conversation" aria-live="polite">
-              <div class="message assistant-message welcome-message">
-                <div class="avatar" aria-hidden="true">H</div>
-                <div class="message-content">
-                  <div class="message-label">HygieneGPT <span class="label-dot"></span></div>
-                  <p>Hi! I can answer from the trusted documents added to this project. Ask me a hygiene question to get started.</p>
-                  <div class="suggestions" aria-label="Example questions">
-                    <button class="suggestion" type="button">When should I wash my hands?</button>
-                    <button class="suggestion" type="button">How do I store drinking water safely?</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <form id="chat-form" class="composer">
-              <label class="sr-only" for="question-input">Ask a hygiene question</label>
-              <textarea id="question-input" rows="1" maxlength="1000" placeholder="Ask a hygiene question…" required></textarea>
-              <div class="composer-actions">
-                <div class="voice-controls">
-                  <label class="sr-only" for="voice-language">Voice language</label>
-                  <select id="voice-language" aria-label="Voice language">
-                    <option value="en-IN">English</option>
-                    <option value="ta-IN">தமிழ்</option>
-                  </select>
-                  <button id="mic-button" class="icon-button" type="button" aria-label="Speak your question" title="Speak your question">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"></path></svg>
-                  </button>
-                </div>
-                <button id="send-button" class="send-button" type="submit" aria-label="Send question">
-                  <span>Ask</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4.5 14-2.7-5.8L5 12Z"></path><path d="m11.8 13.2 3.6-3.6"></path></svg>
-                </button>
-              </div>
-            </form>
-            <p class="fine-print">For learning only. Not a substitute for professional medical advice.</p>
-          </section>
-
-          <div id="connection-status" class="connection-status" role="status">Connecting to the HygieneGPT server…</div>
+          <div>
+            <strong>Trusted library</strong>
+            <span>WHO · UNICEF · CDC</span>
+          </div>
+          <span class="library-status" aria-label="Available"></span>
         </section>
 
-        <aside class="sources-column" aria-labelledby="sources-title">
-          <div class="sources-heading">
-            <div>
-              <p class="eyebrow">SHOW YOUR WORK</p>
-              <h2 id="sources-title">Sources</h2>
-            </div>
-            <span class="source-count" id="source-count">0</span>
-          </div>
-          <div id="sources-list" class="sources-list">
-            <div class="empty-sources">
-              <div class="empty-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6m-6 3.5h6"></path></svg>
-              </div>
-              <h3>Your sources will appear here</h3>
-              <p>When you ask a question, click a citation to see the exact document passage and page.</p>
-            </div>
-          </div>
-          <div class="source-note"><span class="note-icon" aria-hidden="true">i</span><p>Each answer is based only on the documents added to this project. If the sources do not cover it, the chatbot should say so.</p></div>
-        </aside>
-      </main>
+        <div class="download-links">
+          <a href="/downloads/HygieneGPT-Chatbot-Starter.zip" download>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v4h14v-4"></path></svg>
+            <span>Download project ZIP</span>
+          </a>
+          <a href="/downloads/HygieneGPT-Trusted-References.zip" download>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v18H7.5A2.5 2.5 0 0 1 5 17.5v-13Z"></path><path d="M9 7h7m-7 4h7"></path></svg>
+            <span>Download source PDFs</span>
+          </a>
+        </div>
 
-      <footer class="footer"><span>HygieneGPT</span><span>Built for learning, backed by sources.</span></footer>
+        <div class="sidebar-user">
+          <span class="user-avatar" aria-hidden="true">H</span>
+          <span class="user-label"><strong>HygieneGPT</strong><small>Evidence-first assistant</small></span>
+          <span class="more-dots" aria-hidden="true">•••</span>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <button id="sidebar-toggle" class="header-icon mobile-only" type="button" aria-label="Open chat menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          </button>
+          <div class="topbar-title">
+            <span class="mobile-brand-mark" aria-hidden="true">H</span>
+            <div><strong id="active-chat-title">New hygiene chat</strong><span>Answers grounded in trusted documents</span></div>
+          </div>
+          <div class="topbar-actions">
+            <span class="trust-pill"><span class="status-dot"></span> Source-backed</span>
+            <button id="sources-toggle" class="sources-toggle" type="button" aria-expanded="true" aria-controls="sources-panel">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6m-6 3.5h4"></path></svg>
+              <span>Sources</span>
+              <span class="source-count" id="source-count">0</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="workspace" id="workspace">
+          <section class="chat-panel" aria-label="Chat">
+            <div class="chat-scroll-area">
+              <section id="welcome" class="welcome">
+                <div class="welcome-mark" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 3.2 5.2 6v5.3c0 4.3 2.8 7.8 6.8 9.5 4-1.7 6.8-5.2 6.8-9.5V6L12 3.2Z"></path><path d="m9.2 12.2 1.8 1.8 3.9-4"></path></svg>
+                </div>
+                <p class="welcome-eyebrow">YOUR TRUSTED HYGIENE ASSISTANT</p>
+                <h1>What would you like<br class="desktop-break" /> to know?</h1>
+                <p class="welcome-copy">Ask in English or Tamil. HygieneGPT checks trusted guidance and shows you the exact passage behind its answer.</p>
+                <div class="suggestions" aria-label="Suggested questions">
+                  <button class="suggestion" type="button">
+                    <span class="suggestion-icon" aria-hidden="true">✦</span>
+                    <span><strong>Handwashing</strong><small>When should I wash my hands?</small></span>
+                    <span class="suggestion-arrow" aria-hidden="true">↗</span>
+                  </button>
+                  <button class="suggestion" type="button">
+                    <span class="suggestion-icon" aria-hidden="true">✦</span>
+                    <span><strong>Hand sanitizer</strong><small>When is sanitizer a good option?</small></span>
+                    <span class="suggestion-arrow" aria-hidden="true">↗</span>
+                  </button>
+                  <button class="suggestion" type="button">
+                    <span class="suggestion-icon" aria-hidden="true">✦</span>
+                    <span><strong>Good technique</strong><small>Which parts of my hands should I scrub?</small></span>
+                    <span class="suggestion-arrow" aria-hidden="true">↗</span>
+                  </button>
+                </div>
+              </section>
+
+              <div id="conversation" class="conversation" aria-live="polite"></div>
+            </div>
+
+            <div class="composer-area">
+              <form id="chat-form" class="composer">
+                <label class="sr-only" for="question-input">Ask a hygiene question</label>
+                <textarea id="question-input" rows="1" maxlength="1000" placeholder="Message HygieneGPT…" required></textarea>
+                <div class="composer-toolbar">
+                  <div class="voice-controls">
+                    <label class="sr-only" for="voice-language">Voice language</label>
+                    <select id="voice-language" aria-label="Voice language">
+                      <option value="en-IN">English</option>
+                      <option value="ta-IN">தமிழ்</option>
+                    </select>
+                    <button id="mic-button" class="icon-button" type="button" aria-label="Speak your question" title="Speak your question">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"></path></svg>
+                    </button>
+                  </div>
+                  <span class="composer-hint">Enter to send · Shift + Enter for a new line</span>
+                  <button id="send-button" class="send-button" type="submit" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4.5 14-2.7-5.8L5 12Z"></path><path d="m11.8 13.2 3.6-3.6"></path></svg>
+                  </button>
+                </div>
+              </form>
+              <div class="composer-footer">
+                <span id="connection-status" class="connection-status" role="status">Connecting to the trusted library…</span>
+                <span class="fine-print">Learning tool · not medical advice</span>
+              </div>
+            </div>
+          </section>
+
+          <aside id="sources-panel" class="sources-column" aria-labelledby="sources-title">
+            <div class="sources-heading">
+              <div>
+                <p class="sources-kicker">EVIDENCE</p>
+                <h2 id="sources-title">Sources</h2>
+              </div>
+              <button id="sources-close" class="header-icon" type="button" aria-label="Close sources panel">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+              </button>
+            </div>
+            <p class="sources-description">Evidence for the current answer appears here. Select a citation in the chat to jump to its passage.</p>
+            <div id="sources-list" class="sources-list">
+              <div class="empty-sources">
+                <div class="empty-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6m-6 3.5h6"></path></svg>
+                </div>
+                <h3>No sources yet</h3>
+                <p>Ask a question to see the trusted document passage and PDF page.</p>
+              </div>
+            </div>
+            <div class="source-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              <p>HygieneGPT only answers from its reference library. If the documents do not cover a question, it should say so.</p>
+            </div>
+          </aside>
+        </div>
+      </main>
     </div>
     <script src="app.js" defer></script>
   </body>
