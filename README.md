@@ -14,10 +14,18 @@ The documents are stored in backend/documents/ and their source details and reus
 - PDF text extraction that retains one-based page numbers for citations
 - Semantic search with the local ChromaDB index when it is available
 - Bundled-PDF keyword search as a deployment fallback, so Vercel can answer without a prebuilt or persistent vector database
-- OpenAI Responses API for concise grounded answers when server credentials are configured; otherwise the app returns a short source excerpt
-- Refusal when a question is outside the available source passages
+- Separate Trusted Hygiene mode with PDF citations and source-grounded answers
+- Separate General AI mode for broader conversation through the server-side OpenAI Responses API; general answers are clearly uncited
+- General AI mode stays unavailable until OPENAI_API_KEY and OPENAI_MODEL are configured on the server
+- Refusal in Trusted Hygiene mode when a question is outside the available source passages
 - Clickable citations that highlight the supporting passage
 - English and Tamil voice input and output through the browser Web Speech API when supported
+
+## Answer modes
+
+The website has two modes. **Trusted hygiene** answers only from the bundled WHO/UNICEF and CDC PDFs and shows citations. **General AI** can answer broader topics using the OpenAI API; those answers are not checked against the PDFs and are labeled uncited. General AI gives general health education only and does not diagnose or prescribe.
+
+The frontend never receives the provider key. Until the server has both OPENAI_API_KEY and OPENAI_MODEL configured, General AI mode shows that setup is needed and the API returns a clear configuration error.
 
 ## Project layout
 
@@ -71,7 +79,7 @@ The first local semantic indexing run downloads the multilingual embedding model
 
 The included vercel.json routes the frontend and FastAPI backend through one Vercel project. The deployed frontend calls same-domain /api routes; local development calls http://127.0.0.1:8000.
 
-The API reads the bundled PDFs directly and extracts their page text on first use. It can therefore search the included references even though Vercel's ChromaDB directory is temporary. Add OPENAI_API_KEY and OPENAI_MODEL to the Vercel backend environment only if you want generated answers; without them, the API returns a short excerpt from the matching cited source passage.
+The API reads the bundled PDFs directly and extracts their page text on first use. In the Vercel project settings, add OPENAI_API_KEY and OPENAI_MODEL as environment variables for the server. General AI mode is enabled when both are present; its key stays server-side. Without them, trusted hygiene mode still works with cited excerpts, while General AI mode reports that server setup is needed.
 
 ## How citations work
 
@@ -85,7 +93,7 @@ See .env.example for the API key, model, retrieval count, distance threshold and
 
 ## Scope and safety
 
-HygieneGPT is an exhibition prototype, not a medical device or a substitute for professional advice. Its bundled documents focus on community hand hygiene. It cannot diagnose, recommend treatment, answer emergencies or guarantee that every generated claim is correct. If a question is not covered by its sources, it should say it does not know.
+HygieneGPT is an exhibition prototype, not a medical device or a substitute for professional advice. Trusted Hygiene mode is limited to the bundled hand-hygiene documents. General AI mode uses an uncited language model and can be wrong; it does not diagnose, prescribe or handle emergencies. Seek qualified care for personal medical concerns and local emergency services for emergencies.
 
 Questions and retrieved source passages may be sent to OpenAI when the API is configured. Review the provider's current terms and privacy settings before use. Keep credentials private.
 

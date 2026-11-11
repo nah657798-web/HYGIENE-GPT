@@ -109,6 +109,18 @@ h1, h2, h3 { font-family: Manrope, "DM Sans", sans-serif; }
 .speak-answer svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .typing-indicator { color: #7c8a8e !important; font-size: 12px !important; }
 .typing-indicator::after { display: inline-block; content: ""; width: 15px; animation: dots 1.1s steps(4, end) infinite; }
+.answer-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 1px 5px; }
+.answer-mode-switch { display: flex; gap: 3px; margin: 0; padding: 0; border: 0; }
+.answer-mode-option { position: relative; cursor: pointer; }
+.answer-mode-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.answer-mode-option span { display: block; padding: 6px 10px; border: 1px solid transparent; border-radius: 8px; color: #718087; font-size: 10px; font-weight: 650; }
+.answer-mode-option input:checked + span { border-color: #d6e9e1; background: #edf7f2; color: #176b52; }
+.answer-mode-option input:focus-visible + span { outline: 2px solid #65a98f; outline-offset: 2px; }
+.mode-config-status { color: #a35d52; font-size: 9px; text-align: right; }
+.mode-config-status.configured { color: #52816d; }
+.mode-description { margin: 0 2px 7px; color: #899398; font-size: 9px; line-height: 1.4; }
+.answer-mode-badge { margin-left: 7px; padding: 2px 6px; border-radius: 999px; background: #f0f1fa; color: #676398; font-size: 8px; font-weight: 650; }
+.trust-pill.general-mode { border-color: #e3e0f2; background: #f8f7fc; color: #676398; }
 .composer-area { width: min(850px, 100%); flex: 0 0 auto; margin: 0 auto; padding: 8px 22px 14px; }
 .composer { padding: 12px 12px 9px 15px; border: 1px solid #dfe5e8; border-radius: 15px; background: #fff; box-shadow: 0 6px 20px rgba(31, 48, 57, .055); transition: border-color .15s, box-shadow .15s; }
 .composer:focus-within { border-color: #9fc9b8; box-shadow: 0 0 0 3px rgba(44, 147, 109, .1), 0 6px 20px rgba(31, 48, 57, .055); }

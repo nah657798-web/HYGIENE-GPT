@@ -16,10 +16,21 @@ const sourceCount = document.querySelector("#source-count");
 const connectionStatus = document.querySelector("#connection-status");
 const micButton = document.querySelector("#mic-button");
 const voiceLanguage = document.querySelector("#voice-language");
+const answerModeInputs = document.querySelectorAll('input[name="answer-mode"]');
+const modeDescription = document.querySelector("#mode-description");
+const generalModeStatus = document.querySelector("#general-mode-status");
+const modeIndicator = document.querySelector("#mode-indicator");
+const sourceDescription = document.querySelector("#sources-description");
+const sourceNoteText = document.querySelector("#source-note-text");
+const finePrint = document.querySelector("#fine-print");
 
 let chats = [];
 let activeChatId = null;
 let loadingNode = null;
+let answerMode = "trusted";
+let sourcePassageCount = 0;
+let generalAiConfigured = false;
+let serverAvailable = false;
 
 function setConnectionStatus(message, state) {
   connectionStatus.textContent = message;
@@ -36,7 +47,7 @@ function newChat() {
   activeChatId = chat.id;
   renderHistory();
   renderActiveChat();
-  renderSources([]);
+  renderSources([], answerMode);
   closeSidebarOnMobile();
 }
 
@@ -62,7 +73,7 @@ function renderHistory() {
       renderHistory();
       renderActiveChat();
       const lastAnswer = [...chat.messages].reverse().find((message) => message.role === "assistant");
-      renderSources(lastAnswer ? lastAnswer.citations || [] : []);
+      renderSources(lastAnswer ? lastAnswer.citations || [] : [], lastAnswer ? lastAnswer.mode || "trusted" : answerMode);
       closeSidebarOnMobile();
     });
     historyList.append(button);
@@ -76,11 +87,11 @@ function renderActiveChat() {
   welcome.hidden = chat.messages.length > 0;
   conversation.replaceChildren();
   for (const message of chat.messages) {
-    appendMessage(message.role, message.text, message.citations || []);
+    appendMessage(message.role, message.text, message.citations || [], message.mode || "trusted");
   }
 }
 
-function appendMessage(role, text, citations) {
+function appendMessage(role, text, citations, mode = "trusted") {
   const wrapper = document.createElement("div");
   wrapper.className = "message " + (role === "user" ? "user-message" : "assistant-message");
 
@@ -98,10 +109,16 @@ function appendMessage(role, text, citations) {
   if (role !== "user") {
     const label = document.createElement("div");
     label.className = "message-label";
-    label.textContent = "HygieneGPT";
+    label.textContent = mode === "general" ? "General AI" : "HygieneGPT";
     const dot = document.createElement("span");
     dot.className = "label-dot";
     label.append(dot);
+    if (mode === "general") {
+      const badge = document.createElement("span");
+      badge.className = "answer-mode-badge";
+      badge.textContent = "Uncited AI answer";
+      label.append(badge);
+    }
     content.append(label);
   }
 
@@ -114,7 +131,7 @@ function appendMessage(role, text, citations) {
   }
   content.append(paragraph);
 
-  if (role !== "user" && text && citations && citations.length) {
+  if (role !== "user" && text) {
     const tools = document.createElement("div");
     tools.className = "message-tools";
     const speak = document.createElement("button");
@@ -157,14 +174,16 @@ function appendAnswerWithCitations(element, text, citations) {
   element.append(document.createTextNode(text.slice(cursor)));
 }
 
-function renderSources(citations) {
+function renderSources(citations, mode = "trusted") {
   sourceCount.textContent = String(citations.length);
   sourcesList.replaceChildren();
 
   if (!citations.length) {
     const empty = document.createElement("div");
     empty.className = "empty-sources";
-    empty.innerHTML = '<div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6m-6 3.5h6"></path></svg></div><h3>No sources yet</h3><p>Ask a question to see the trusted document passage and PDF page.</p>';
+    empty.innerHTML = mode === "general"
+      ? '<div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6m-6 3.5h6"></path></svg></div><h3>General AI answer</h3><p>This reply is not checked against the trusted PDF library.</p>'
+      : '<div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6m-6 3.5h6"></path></svg></div><h3>No sources yet</h3><p>Ask a supported hygiene question to see its trusted document passage and PDF page.</p>';
     sourcesList.append(empty);
     return;
   }
@@ -229,10 +248,10 @@ function highlightCitation(citationId, citations) {
   if (window.innerWidth <= 820) workspace.classList.add("sources-open");
 }
 
-function saveMessage(role, text, citations) {
+function saveMessage(role, text, citations, mode = answerMode) {
   const chat = getActiveChat();
   if (!chat) return;
-  chat.messages.push({ role, text, citations: citations || [] });
+  chat.messages.push({ role, text, citations: citations || [], mode });
   if (role === "user" && chat.title === "New hygiene chat") {
     chat.title = text.trim().slice(0, 38) + (text.trim().length > 38 ? "…" : "");
     activeChatTitle.textContent = chat.title;
@@ -252,14 +271,16 @@ async function askQuestion(question) {
   if (!chat || !question.trim() || sendButton.disabled) return;
 
   welcome.hidden = true;
-  saveMessage("user", question, []);
+  saveMessage("user", question, [], answerMode);
   appendMessage("user", question, []);
   sendButton.disabled = true;
   input.disabled = true;
 
   loadingNode = document.createElement("div");
   loadingNode.className = "message assistant-message";
-  loadingNode.innerHTML = '<div class="avatar" aria-hidden="true">H</div><div class="message-content"><div class="message-label">HygieneGPT <span class="label-dot"></span></div><p class="typing-indicator">Checking the trusted documents</p></div>';
+  const loadingLabel = answerMode === "general" ? "General AI" : "HygieneGPT";
+  const loadingText = answerMode === "general" ? "Thinking through your question" : "Checking the trusted documents";
+  loadingNode.innerHTML = '<div class="avatar" aria-hidden="true">H</div><div class="message-content"><div class="message-label">' + loadingLabel + ' <span class="label-dot"></span></div><p class="typing-indicator">' + loadingText + '</p></div>';
   conversation.append(loadingNode);
   conversation.scrollTop = conversation.scrollHeight;
 
@@ -267,21 +288,29 @@ async function askQuestion(question) {
     const response = await fetch(API_BASE + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({
+        question,
+        mode: answerMode,
+        history: chat.messages.slice(0, -1).slice(-10).map((message) => ({
+          role: message.role,
+          content: message.text,
+        })),
+      }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "The server could not answer right now.");
 
     removeLoading();
-    saveMessage("assistant", data.answer, data.citations || []);
-    appendMessage("assistant", data.answer, data.citations || []);
-    renderSources(data.citations || []);
+    const responseMode = data.mode || answerMode;
+    saveMessage("assistant", data.answer, data.citations || [], responseMode);
+    appendMessage("assistant", data.answer, data.citations || [], responseMode);
+    renderSources(data.citations || [], responseMode);
   } catch (error) {
     removeLoading();
     const message = error.message || "I could not reach the server. Please try again.";
-    saveMessage("assistant", message, []);
-    appendMessage("assistant", message, []);
-    renderSources([]);
+    saveMessage("assistant", message, [], answerMode);
+    appendMessage("assistant", message, [], answerMode);
+    renderSources([], answerMode);
   } finally {
     removeLoading();
     sendButton.disabled = false;
@@ -318,8 +347,42 @@ document.querySelector("#sources-close").addEventListener("click", () => {
   if (window.innerWidth <= 820) workspace.classList.remove("sources-open");
   else workspace.classList.add("sources-collapsed");
 });
+function setAnswerMode(mode) {
+  answerMode = mode === "general" ? "general" : "trusted";
+  answerModeInputs.forEach((radio) => { radio.checked = radio.value === answerMode; });
+  updateAnswerModeUI();
+  updateConnectionStatus();
+}
+
+function updateAnswerModeUI() {
+  const isGeneral = answerMode === "general";
+  modeDescription.textContent = isGeneral
+    ? "General AI can answer beyond the PDFs. Responses are uncited and may be inaccurate."
+    : "Answers are limited to trusted hygiene PDFs and include clickable citations.";
+  modeIndicator.innerHTML = '<span class="status-dot"></span>' + (isGeneral ? "General AI · Uncited" : "Source-backed");
+  modeIndicator.classList.toggle("general-mode", isGeneral);
+  generalModeStatus.textContent = generalAiConfigured ? "Server AI configured" : "Server setup needed";
+  generalModeStatus.className = "mode-config-status" + (generalAiConfigured ? " configured" : " needs-setup");
+  sourceDescription.textContent = isGeneral
+    ? "General AI responses are not checked against the trusted reference PDFs."
+    : "Evidence for the current answer appears here. Select a citation in the chat to jump to its passage.";
+  sourceNoteText.textContent = isGeneral
+    ? "General AI responses are not verified against the trusted reference library."
+    : "HygieneGPT answers from its trusted reference library in this mode.";
+  finePrint.textContent = isGeneral
+    ? "General AI · verify important information"
+    : "Learning tool · not medical advice";
+}
+
+answerModeInputs.forEach((radio) => {
+  radio.addEventListener("change", () => setAnswerMode(radio.value));
+});
+
 document.querySelectorAll(".suggestion").forEach((button) => {
-  button.addEventListener("click", () => askQuestion(button.querySelector("small").textContent));
+  button.addEventListener("click", () => {
+    setAnswerMode("trusted");
+    askQuestion(button.querySelector("small").textContent);
+  });
 });
 
 form.addEventListener("submit", (event) => {
@@ -387,19 +450,43 @@ if (SpeechRecognition) {
 
 newChat();
 
+function updateConnectionStatus() {
+  if (!serverAvailable) {
+    setConnectionStatus("Unable to connect to the server. Try again in a moment.", "offline");
+    return;
+  }
+  if (answerMode === "general") {
+    setConnectionStatus(
+      generalAiConfigured
+        ? "General AI settings are present on the server"
+        : "General AI needs OPENAI_API_KEY and OPENAI_MODEL on the server",
+      generalAiConfigured ? "online" : "offline",
+    );
+    return;
+  }
+  setConnectionStatus(
+    sourcePassageCount > 0
+      ? sourcePassageCount + " trusted source passages ready"
+      : "No readable trusted PDF passages were found",
+    sourcePassageCount > 0 ? "online" : "offline",
+  );
+}
+
 async function checkServer() {
   try {
     const response = await fetch(API_BASE + "/api/health");
     if (!response.ok) throw new Error("API unavailable");
     const health = await response.json();
-    setConnectionStatus(
-      health.indexed_passages > 0
-        ? health.indexed_passages + " source passages ready"
-        : "No readable trusted PDF passages were found",
-      health.indexed_passages > 0 ? "online" : "offline",
-    );
+    serverAvailable = true;
+    sourcePassageCount = Number(health.indexed_passages) || 0;
+    generalAiConfigured = Boolean(health.general_ai_configured);
+    updateAnswerModeUI();
+    updateConnectionStatus();
   } catch {
-    setConnectionStatus("Unable to connect to the server. Try again in a moment.", "offline");
+    serverAvailable = false;
+    generalAiConfigured = false;
+    updateAnswerModeUI();
+    updateConnectionStatus();
   }
 }
 checkServer();
