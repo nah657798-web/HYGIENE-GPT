@@ -61,7 +61,7 @@ def chat(request: ChatRequest) -> dict[str, object]:
 
     if not passages:
         return {
-            "answer": "I don't know based on the trusted hygiene documents currently available.",
+            "answer": "I couldn't find support for that in the current hand-hygiene references. Try asking about handwashing, soap, sanitizer, or when to clean hands.",
             "citations": [],
         }
 
@@ -81,7 +81,7 @@ def chat(request: ChatRequest) -> dict[str, object]:
     # If the answer omits citations or invents an ID, refuse rather than show an unverified answer.
     if not valid_passages or not cited_ids.issubset(retrieved_ids):
         return {
-            "answer": "I don't know based on the trusted hygiene documents currently available.",
+            "answer": "I couldn't find support for that in the current hand-hygiene references. Try asking about handwashing, soap, sanitizer, or when to clean hands.",
             "citations": [],
         }
 
