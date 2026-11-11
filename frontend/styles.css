@@ -195,3 +195,6 @@ h1, h2, h3 { font-family: Manrope, "DM Sans", sans-serif; }
   .composer-footer { align-items: flex-start; }
   .fine-print { max-width: 135px; }
 }
+
+.workspace.sources-collapsed { grid-template-columns: minmax(0, 1fr); }
+.workspace.sources-collapsed .sources-column { display: none; }
