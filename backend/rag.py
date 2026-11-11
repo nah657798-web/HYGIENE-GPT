@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections import Counter
 from functools import lru_cache
+from math import log
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +48,15 @@ ALIAS_GROUPS = (
     {"food", "eating", "eat", "feeding", "prepare", "preparing"},
     {"water", "running", "reliable", "soap"},
 )
+
+INTENT_ALIASES = {
+    "when": {"before", "after", "moment", "moments", "time", "times", "occasion", "occasions", "critical"},
+    "how": {"method", "methods", "step", "steps", "technique", "process"},
+    "long": {"duration", "seconds", "second", "minutes", "minute", "time"},
+    "where": {"place", "places", "setting", "settings", "facility", "facilities"},
+    "why": {"reason", "reasons", "reduce", "prevent", "prevention"},
+    "what": {"definition", "meaning", "purpose"},
+}
 
 TAMIL_EXPANSIONS = {
     "கை": {"hand", "hands"},
@@ -170,10 +181,12 @@ def get_bundled_passages() -> list[dict[str, Any]]:
 
 
 def _question_terms(question: str) -> set[str]:
+    # Keep question words that signal what kind of answer the user needs.
+    intent_terms = {"how", "when", "where", "which", "why", "what"}
     terms = {
         token
         for token in _tokens(question)
-        if len(token) > 1 and token not in STOPWORDS
+        if len(token) > 1 and (token not in STOPWORDS or token in intent_terms)
     }
     lowered = question.casefold()
     for tamil_phrase, english_terms in TAMIL_EXPANSIONS.items():
@@ -191,38 +204,63 @@ def _keyword_retrieve(question: str) -> list[dict[str, Any]]:
     if not query_terms or not _has_hygiene_scope(query_terms):
         return []
 
+    passages = get_bundled_passages()
+    if not passages:
+        return []
+
     aliases: set[str] = set()
     for group in ALIAS_GROUPS:
         if query_terms.intersection(group):
             aliases.update(group - query_terms)
+    for term in query_terms:
+        aliases.update(INTENT_ALIASES.get(term, set()) - query_terms)
 
-    scored: list[tuple[float, dict[str, Any]]] = []
-    for passage in get_bundled_passages():
-        passage_terms = set(_tokens(passage["text"]))
-        direct_matches = query_terms.intersection(passage_terms)
-        alias_matches = aliases.intersection(passage_terms)
-        weighted_matches = len(direct_matches) + 0.25 * len(alias_matches)
-        denominator = max(1.0, len(query_terms) + 0.25 * len(aliases))
-        score = weighted_matches / denominator
+    tokenized_passages = [_tokens(passage["text"]) for passage in passages]
+    document_frequency: Counter[str] = Counter()
+    for tokens in tokenized_passages:
+        document_frequency.update(set(tokens))
 
-        if score >= 0.08:
-            scored.append((score, passage))
+    corpus_size = len(passages)
+    average_length = max(
+        1.0,
+        sum(len(tokens) for tokens in tokenized_passages) / corpus_size,
+    )
 
-    scored.sort(key=lambda item: item[0], reverse=True)
+    def term_score(term: str, tokens: list[str]) -> float:
+        frequency = tokens.count(term)
+        if not frequency:
+            return 0.0
+        document_count = document_frequency.get(term, 0)
+        inverse_frequency = log(
+            1.0 + (corpus_size - document_count + 0.5) / (document_count + 0.5)
+        )
+        length_normalizer = 1.2 * (
+            0.25 + 0.75 * len(tokens) / average_length
+        )
+        return inverse_frequency * (frequency * 2.2) / (frequency + length_normalizer)
+
+    scored: list[tuple[float, int, dict[str, Any]]] = []
+    for index, (passage, tokens) in enumerate(zip(passages, tokenized_passages)):
+        score = sum(term_score(term, tokens) for term in query_terms)
+        # Synonyms help with wording differences, but exact query words remain stronger.
+        score += 0.2 * sum(term_score(term, tokens) for term in aliases)
+        if score >= 0.25:
+            scored.append((score, index, passage))
+
+    scored.sort(key=lambda item: (-item[0], item[1]))
     return [
         {
             "citation_id": f"S{index}",
             "text": passage["text"],
-            "distance": round(1.0 - score, 4),
+            "distance": round(1.0 / (1.0 + score), 4),
             "source": passage["source"],
             "organization": passage["organization"],
             "year": passage["year"],
             "url": passage["url"],
             "page": int(passage["page"]),
         }
-        for index, (score, passage) in enumerate(scored[:TOP_K], start=1)
+        for index, (score, _, passage) in enumerate(scored[:TOP_K], start=1)
     ]
-
 
 def _semantic_retrieve(question: str) -> list[dict[str, Any]]:
     collection = get_collection()
@@ -266,6 +304,11 @@ def _semantic_retrieve(question: str) -> list[dict[str, Any]]:
 
 
 def retrieve(question: str) -> list[dict[str, Any]]:
+    # Never let a broad semantic match turn an unrelated question into a health answer.
+    query_terms = _question_terms(question)
+    if not query_terms or not _has_hygiene_scope(query_terms):
+        return []
+
     # Keep the local semantic index when available. If it is empty, unavailable,
     # or finds no close passage, search the PDFs bundled with the deployed app.
     try:
@@ -287,28 +330,51 @@ def available_passage_count() -> int:
     return len(get_bundled_passages())
 
 
-def _extractive_answer(passages: list[dict[str, Any]]) -> str:
-    passage = passages[0]
-    sentences = [
-        sentence.strip()
-        for sentence in re.split(r"(?<=[.!?])\s+", passage["text"])
-        if sentence.strip()
-    ]
-    if not sentences:
-        excerpt = " ".join(passage["text"].split()[:45])
+def _extractive_answer(
+    question: str,
+    passages: list[dict[str, Any]],
+) -> str:
+    query_terms = _question_terms(question)
+    aliases: set[str] = set()
+    for group in ALIAS_GROUPS:
+        if query_terms.intersection(group):
+            aliases.update(group - query_terms)
+    for term in query_terms:
+        aliases.update(INTENT_ALIASES.get(term, set()) - query_terms)
+
+    candidates: list[tuple[float, int, str, dict[str, Any]]] = []
+    for passage_index, passage in enumerate(passages):
+        sentences = [
+            sentence.strip()
+            for sentence in re.split(r"(?<=[.!?])\s+", passage["text"])
+            if sentence.strip()
+        ]
+        for sentence in sentences:
+            sentence_terms = set(_tokens(sentence))
+            direct_matches = query_terms.intersection(sentence_terms)
+            if not direct_matches:
+                continue
+            alias_matches = aliases.intersection(sentence_terms)
+            score = 2.0 * len(direct_matches) + 0.35 * len(alias_matches)
+            score /= 1.0 + 0.015 * len(sentence_terms)
+            candidates.append((score, -passage_index, sentence, passage))
+
+    if candidates:
+        _, _, excerpt, passage = max(candidates, key=lambda item: (item[0], item[1]))
     else:
-        excerpt = sentences[0]
+        passage = passages[0]
+        excerpt = " ".join(passage["text"].split()[:45])
+
     words = excerpt.split()
     if len(words) > 45:
         excerpt = " ".join(words[:45]).rstrip(" ,;:") + "..."
     return f'The trusted document says: "{excerpt}" [{passage["citation_id"]}]'
 
-
 def generate_grounded_answer(question: str, passages: list[dict[str, Any]]) -> str:
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     model_name = os.getenv("OPENAI_MODEL", "").strip()
     if not api_key or not model_name or model_name == "your-enabled-model-id":
-        return _extractive_answer(passages)
+        return _extractive_answer(question, passages)
 
     evidence = "\n\n".join(
         f"[{passage['citation_id']}] {passage['source']} — PDF page {passage['page']}\n"
@@ -339,7 +405,7 @@ def generate_grounded_answer(question: str, passages: list[dict[str, Any]]) -> s
             max_output_tokens=450,
         )
         answer = response.output_text.strip()
-        return answer or _extractive_answer(passages)
+        return answer or _extractive_answer(question, passages)
     except Exception:
         # Keep source lookup useful if the hosted model is temporarily unavailable.
-        return _extractive_answer(passages)
+        return _extractive_answer(question, passages)
